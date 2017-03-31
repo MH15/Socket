@@ -10,8 +10,7 @@ var numUsers = 0;
 app.use(express.static(__dirname + '/public'));
 
 server.listen(port, function(){
-  console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);
-  console.log('/index.html');
+  console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env)
 });
 
 app.get('/', function(req, res){
@@ -21,27 +20,36 @@ app.get('/', function(req, res){
 io.on('connection', function(socket){
 	var addedUser = false;
 
+  // user added!
+  socket.on('add user', function (username) {
+    ++numUsers
+    socket.username = username
+    console.log("NEW USER: @" + username + " joined")
+    
+    socket.emit('login', {
+      numUsers: numUsers
+    });
+
+    // send to everyone except current user
+    socket.broadcast.emit('user joined', {
+      username: socket.username,
+      numUsers: numUsers
+    });
+  });
+
+
 	socket.on('chat message', function(msg){
 		// io.emit('chat message', msg)
-		// echo globally (all clients) that a person has connected
-   	io.emit('chat message', {
-   		userName: socket.userName,
-   		msg: msg
+		// echo globally (all clients) that a person has sent a message
+   	io.sockets.emit('chat message', {
+   		username: socket.username,
+   		message: msg
    	});
-		console.log("message: " + msg)
+		console.log("NEW MESSAGE: @" + socket.userNnme + ": " + msg)
 	});
 
-	// user added!
-	socket.on('add user', function (userName) {
-  		++numUsers
-  		socket.userName = userName
-  		console.log(userName + " joined")
-   	// echo globally (all clients) that a person has connected
-   	socket.broadcast.emit('user joined', {
-   		userName: socket.userName,
-   		numUsers: numUsers
-   	});
-	});
+	
+  
 
 });
 
